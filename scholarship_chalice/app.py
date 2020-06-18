@@ -21,35 +21,75 @@ def index():
     return {'hello': 'world'}
 
 
-@app.route('/addStudent', methods=['POST'])
-def add_student(event):
+@app.route('/createStudent', methods=['POST'])
+def create_student(event):
     """
     This function fetches content from mysql RDS instance
     """
     result = []
     conn = pymysql.connect(rds_host, user=name, passwd=password, db=db_name, connect_timeout=5)
     with conn.cursor() as cur:
-        cur.execute("""select * from tbl_students WHERE StudentID = '%s'""" % (event['studentId']))
+        cur.execute("""select * from tbl_students WHERE email = '%s'""" % (event['email']))
         result = cur.fetchone()
         if (result == None):
-            cur.execute("""insert into tbl_students (StudentID, FirstName, LastName) 
+            cur.execute("""insert into tbl_students (email, firstName, lastName) 
             values( '%s', '%s', '%s')""" 
-            % ( event['studentId'], event['firstName'], event['lastName']))
+            % (event['email'], event['firstName'], event['lastName']))
             conn.commit()
-            for row in cur:
-                print(row)
             cur.close()
-            print('here')
             return {
                 'statusCode' : 200,
             }
         else:
             cur.close()
-            print('here2')
             return {
                 'statusCode' : 400,
                 'error' : 'Student Already Exists'
             }
+
+
+@app.route('/createGroup', methods=['POST'])
+def create_group(event):
+    result = []
+    conn = pymysql.connect(rds_host, user=name, passwd=password, db=db_name, connect_timeout=5)
+    with conn.cursor() as cur:
+        cur.execute("""insert into tbl_groups (name, description) 
+        values( '%s', '%s', '%s')""" 
+        % (event['name'], event['description']))
+        conn.commit()
+
+        cur.close()
+        return {
+            'statusCode' : 200
+        }
+    # not sure how with as statements work, my thought is that if the sql fails
+    # it will come here and if it succeeds it will return before this
+    return {
+        'statusCode' : 400
+    }
+
+
+@app.route('/joinGroup', methods=['POST'])
+def create_group(event):
+    groupID = event['groupID']
+    studentID = event['studentID']
+    conn = pymysql.connect(rds_host, user=name, passwd=password, db=db_name, connect_timeout=5)
+    with conn.cursor() as cur:
+        cur.execute("""insert into tbl_groupsStud (studentID, groupID) 
+        values( '%s', '%s')""" 
+        % (event['studentID'], event['groupID']))
+        conn.commit()
+
+        cur.close()
+        return {
+            'statusCode' : 200
+        }
+    # not sure how with as statements work, my thought is that if the sql fails
+    # it will come here and if it succeeds it will return before this
+    return {
+        'statusCode' : 400,
+        'error' : 'Student Already Exists'
+    }
 
 # The view function above will return {"hello": "world"}
 # whenever you make an HTTP GET request to '/'.
