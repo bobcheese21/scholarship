@@ -6,6 +6,7 @@ from addStudClass import main as asc
 import pandas as pd
 import textract
 import pymysql
+import io
 
 # %%
 pdf = ppy.PdfFileReader("./Transcript for Robi.pdf")

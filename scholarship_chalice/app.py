@@ -2,6 +2,7 @@ from chalice import Chalice
 import pymysql
 import sys
 from configparser import ConfigParser  
+from parseUWTranscript import getClasses
 
 config = ConfigParser()  
 config.read('./config.ini')  
@@ -70,7 +71,7 @@ def create_group(event):
 
 
 @app.route('/joinGroup', methods=['POST'])
-def create_group(event):
+def join_group(event):
     groupID = event['groupID']
     studentID = event['studentID']
     conn = pymysql.connect(rds_host, user=name, passwd=password, db=db_name, connect_timeout=5)
@@ -90,6 +91,17 @@ def create_group(event):
         'statusCode' : 400,
         'error' : 'Student Already Exists'
     }
+
+@app.route('/uploadTranscript', methods=['POST'])
+def upload_transcript(event):
+    # get the base64 encoded pdf
+    pdf_base64 = event['transcriptData']
+    with open("transcript.pdf", "wb") as transcript:
+        # write the base64 to the file
+        transcript.write(pdf_base64.decode('base64'))
+        # parse the pdf
+        pdf2 = ppy.PdfFileReader("transcript.pdf")
+        print(getClasses(pdf2))
 
 # The view function above will return {"hello": "world"}
 # whenever you make an HTTP GET request to '/'.
