@@ -50,13 +50,13 @@ def mergePages(pages):
     studentNumber = ""
     for i in range(pages.getNumPages()):
         page = pages.getPage(i)
-        parsed = page.extraddClasstText().split('\n')
+        parsed = page.extractText().split('\n')
         studentNumber = parsed[8]
         for i,x in enumerate(parsed):
             if "Page" in x:
                 breaks = i
             if 'CURRENTLY ENROLLED' in x:
-                curQtr = x.split('(')[1].split(')')[0].repladdClasse('QUARTER, ', "")        
+                curQtr = x.split('(')[1].split(')')[0].replace('QUARTER, ', "")        
         useful = parsed[breaks + 1: ]
         total.extend(useful)
     return {'total': total, 'curQtr': curQtr.strip(), 'studentID': studentNumber}
