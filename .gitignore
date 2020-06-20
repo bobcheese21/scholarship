@@ -1,5 +1,6 @@
 Transcript for Robi.pdf
 UWUnofficialTranscript.pdf
-./scholarship_chalice/config.ini
+./scholarship_api/config.ini
 minsu.pdf
-./scholarship_chalice/env/
+./scholarship_api/env/
+*.pyc
