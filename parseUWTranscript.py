@@ -41,7 +41,57 @@ def commitData(data, studentID):
         studClassBatch.append((studentID, row['Quarter'], row['ClassNum'], row['Department'], row['ClassTitle'], row['Year']))
     asc.main(studClassBatch)
 
-    
+# Helper function to acquire department
+def acquirePrefix(a):
+    count = 0
+    prefix = ''
+    hitInt = False
+    while hitInt != True:
+        element = a[count]
+        try:
+            int(element)
+            hitInt = True
+            break
+        except:
+            prefix = prefix + " " + element
+            count = count + 1
+    return prefix
+
+# Helper function to acquire class num
+def acquireNum(a):
+    count = 0
+    num = ''
+    hitInt = False
+    while hitInt != True:
+        element = a[count]
+        try:
+            int(element)
+            return element
+
+        except:
+            count = count + 1
+    return num
+
+# Helper function to acquire class title
+def acquireTitle(curSplit, curQtr, i):
+    desc = ''
+    grade = curSplit[-1]
+    hitInt = False
+    count = len(curSplit) - 3
+    if curQtr == str(i['Quarter'] + " " + i['Year']):
+        for j in range(2, len(curSplit) - 1):
+            desc = desc + " " + curSplit[j]
+        grade = "IP"
+    else:
+        while hitInt != True:
+            element = curSplit[count]
+            try:
+                int(element)
+                hitInt = True
+            except:
+                desc = curSplit[count] + " " + desc
+                count = count - 1
+    return {"desc": desc, "grade": grade}
 
 # %%
 def mergePages(pages):
@@ -71,37 +121,44 @@ def getClasses(pdf):
     parsed = information['total']
     curQtr = information['curQtr']
     studentID = information['studentID']
-    durations = pd.DataFrame(columns = ['Quarter', 'Year', 'StatusWhile', 'index'])
+    durations = pd.DataFrame(
+        columns=['Quarter', 'Year', 'StatusWhile', 'index'])
     count = 0
     for i, x in enumerate(parsed):
         if 'AUTUMN' in x or 'WINTER' in x or 'SPRING' in x and 'D E S T R O Y' not in x:
-            row = {'Quarter': x.split()[0], 'Year': x.split()[1], 'StatusWhile' : x.split()[2], 'index': i}
+            row = {'Quarter': x.split()[0], 'Year': x.split()[
+                1], 'StatusWhile': x.split()[2], 'index': i}
     #         y = x.split()
             durations = durations.append(row, ignore_index=True)
-            count = count +1
+            count = count + 1
 
-    classes = pd.DataFrame(columns = ['Quarter', 'Department', 'ClassNum', 'ClassTitle', 'Grade'])
+    classes = pd.DataFrame(
+        columns=['Quarter', 'Department', 'ClassNum', 'ClassTitle', 'Grade'])
     for i in durations.iloc:
         ind = i['index'] + 1
         cur = parsed[ind]
         while 'QTR' not in cur and 'EARNED' not in cur and 'D E S T R O Y' not in cur and ind < len(parsed):
             if 'GEN ST' in cur:
-                cur = cur.replace('GEN ST' ,"GEN")
+                cur = cur.replace('GEN ST', "GEN")
             curSplit = cur.split()
-            desc = ""
-            grade =  curSplit[-1]
-            for j in range(2, len(curSplit) - 2):
-                desc = desc + " " + curSplit[j]
-            if curQtr == str(i['Quarter'] + " " +i['Year']):
-                desc = ""
-                for j in range(2, len(curSplit) - 1):
-                    desc = desc + " " + curSplit[j]
-                grade = "IP"
-            row = {'Quarter': i['Quarter'].strip(), 'Year': i['Year'].strip(), 'Grade': grade.strip(), 'Department': curSplit[0].strip(), 'ClassNum': curSplit[1].strip(), 'ClassTitle' : desc.strip() }
+            retted = acquireTitle(curSplit, curQtr, i)
+            desc = retted["desc"]
+            grade = retted["grade"]
+#             desc = ""
+#             grade =  curSplit[-1]
+#             for j in range(2, len(curSplit) - 2):
+#                 desc = desc + " " + curSplit[j]
+#             if curQtr == str(i['Quarter'] + " " +i['Year']):
+#                 desc = ""
+#                 for j in range(2, len(curSplit) - 1):
+#                     desc = desc + " " + curSplit[j]
+#                 grade = "IP"
+            row = {'Quarter': i['Quarter'].strip(), 'Year': i['Year'].strip(), 'Grade': grade.strip(
+            ), 'Department': acquirePrefix(curSplit), 'ClassNum': acquireNum(curSplit), 'ClassTitle': desc.strip()}
             classes = classes.append(row, ignore_index=True)
             ind = ind + 1
             cur = parsed[ind]
-            
+
     return {'data': classes, 'studentID': studentID}
 
 # %%
