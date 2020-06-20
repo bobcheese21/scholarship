@@ -73,7 +73,7 @@ def demo_auth(auth_request):
             #                     " token."}, 401)
 
         print(payload)
-    return AuthResponse(routes=['/'], principal_id='user')
+    return AuthResponse(routes=['/'], principal_id='user', context={'payload': payload})
     # raise AuthError({"code": "invalid_header",
     #                 "description": "Unable to find appropriate key"}, 401)
 
@@ -82,8 +82,6 @@ def demo_auth(auth_request):
 def index():
     print(app.current_request.context)
     return {'hello': 'world'}
-
-
 
 
 # Format error response and append status code

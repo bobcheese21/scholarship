@@ -62,7 +62,7 @@ def mergePages(pages):
     return {'total': total, 'curQtr': curQtr.strip(), 'studentID': studentNumber}
 
 # %%
-def getCladdStudentes(pdf):
+def getClasses(pdf):
     information = mergePages(pdf)
     parsed = information['total']
     curQtr = information['curQtr']
