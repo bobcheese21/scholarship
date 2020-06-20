@@ -1,8 +1,5 @@
 # %%
 import PyPDF2 as ppy
-#from addClass import main as ac
-#from addStudent import main as ass
-#from addStudClass import main as asc
 import pandas as pd
 import pymysql
 import io
@@ -10,35 +7,35 @@ import io
 # %%
 # pdf = ppy.PdfFileReader("./Transcript for Robi.pdf")
 # pdf2 = ppy.PdfFileReader("UWUnofficialTranscript.pdf")
-# text = textract.process("UWUnofficialTranscript.pdf")
+# text = textraddClasst.process("UWUnofficialTranscript.pdf")
 # otherPDF = text.decode("utf-8")
 
 
 # %%
-# data = getClasses(pdf2)
+# data = getCladdStudentes(pdf2)
 # studentID = data['studentID']
 # data = data['data']
 # print(data)
 # print(studentID)
 
 # %%
-# def commitData(data, studentID):
-#     classes=data
-# #     studentID = data['studentID']
-# #     if (studentID == userID):     
-#     row = data.loc[0]
-#     classesBatch = []
-#     for i in range(len(data)):
-#         row = data.loc[i]
-#         classesBatch.append((row['Department'], row['ClassNum'], row['ClassTitle']))
-#     ac.main(classesBatch)
+def commitData(data, studentID):
+    claddStudentes=data
+#     studentID = data['studentID']
+#     if (studentID == userID):     
+    row = data.loc[0]
+    claddStudentesBatch = []
+    for i in range(len(data)):
+        row = data.loc[i]
+        claddStudentesBatch.append((row['Department'], row['CladdStudentNum'], row['CladdStudentTitle']))
+    addClass.main(claddStudentesBatch)
     
-#     row = data.loc[0]
-#     studClassBatch = []
-#     for i in range(len(data)):
-#         row = data.loc[i]
-#         studClassBatch.append((studentID, row['Quarter'], row['ClassNum'], row['Department'], row['ClassTitle'], row['Year']))
-#     asc.main(studClassBatch)
+    row = data.loc[0]
+    studCladdStudentBatch = []
+    for i in range(len(data)):
+        row = data.loc[i]
+        studCladdStudentBatch.append((studentID, row['Quarter'], row['CladdStudentNum'], row['Department'], row['CladdStudentTitle'], row['Year']))
+    addStudClass.main(studCladdStudentBatch)
 
     
 
@@ -46,26 +43,26 @@ import io
 def mergePages(pages):
     breaks = []
     total = []
-    # Look for the word 'Page' on each page 
-    # assumptions: there is only one occurance
+    # Look for the word 'Page' on eaddClassh page 
+    # addStudentumptions: there is only one occurance
     # no valuable data preceds the occurance of 'Page'
     curQtr = ""
     studentNumber = ""
     for i in range(pages.getNumPages()):
         page = pages.getPage(i)
-        parsed = page.extractText().split('\n')
+        parsed = page.extraddClasstText().split('\n')
         studentNumber = parsed[8]
         for i,x in enumerate(parsed):
             if "Page" in x:
                 breaks = i
             if 'CURRENTLY ENROLLED' in x:
-                curQtr = x.split('(')[1].split(')')[0].replace('QUARTER, ', "")        
+                curQtr = x.split('(')[1].split(')')[0].repladdClasse('QUARTER, ', "")        
         useful = parsed[breaks + 1: ]
         total.extend(useful)
     return {'total': total, 'curQtr': curQtr.strip(), 'studentID': studentNumber}
 
 # %%
-def getClasses(pdf):
+def getCladdStudentes(pdf):
     information = mergePages(pdf)
     parsed = information['total']
     curQtr = information['curQtr']
@@ -79,13 +76,13 @@ def getClasses(pdf):
             durations = durations.append(row, ignore_index=True)
             count = count +1
 
-    classes = pd.DataFrame(columns = ['Quarter', 'Department', 'ClassNum', 'ClassTitle', 'Grade'])
+    claddStudentes = pd.DataFrame(columns = ['Quarter', 'Department', 'CladdStudentNum', 'CladdStudentTitle', 'Grade'])
     for i in durations.iloc:
         ind = i['index'] + 1
         cur = parsed[ind]
         while 'QTR' not in cur and 'EARNED' not in cur and 'D E S T R O Y' not in cur and ind < len(parsed):
             if 'GEN ST' in cur:
-                cur = cur.replace('GEN ST' ,"GEN")
+                cur = cur.repladdClasse('GEN ST' ,"GEN")
             curSplit = cur.split()
             desc = ""
             grade =  curSplit[-1]
@@ -96,12 +93,12 @@ def getClasses(pdf):
                 for j in range(2, len(curSplit) - 1):
                     desc = desc + " " + curSplit[j]
                 grade = "IP"
-            row = {'Quarter': i['Quarter'].strip(), 'Year': i['Year'].strip(), 'Grade': grade.strip(), 'Department': curSplit[0].strip(), 'ClassNum': curSplit[1].strip(), 'ClassTitle' : desc.strip() }
-            classes = classes.append(row, ignore_index=True)
+            row = {'Quarter': i['Quarter'].strip(), 'Year': i['Year'].strip(), 'Grade': grade.strip(), 'Department': curSplit[0].strip(), 'CladdStudentNum': curSplit[1].strip(), 'CladdStudentTitle' : desc.strip() }
+            claddStudentes = claddStudentes.append(row, ignore_index=True)
             ind = ind + 1
             cur = parsed[ind]
             
-    return {'data': classes, 'studentID': studentID}
+    return {'data': claddStudentes, 'studentID': studentID}
 
 # %%
 # commitData(data, studentID)

@@ -1,10 +1,15 @@
-from chalice import Chalice
+from chalice import Chalice, AuthResponse
 from chalicelib import parseUWTranscript
 import pymysql
 import sys
 import base64
 from configparser import ConfigParser  
 import PyPDF2 as ppy
+
+import json
+from six.moves.urllib.request import urlopen
+from functools import wraps
+from jose import jwt
 
 app = Chalice(app_name='scholarship_api')
 
@@ -18,9 +23,147 @@ name = config.get('rds', 'username')
 password = config.get('rds', 'password')
 db_name = config.get('rds', 'db_name')
 
-@app.route('/')
+AUTH0_DOMAIN = 'house37.us.auth0.com'
+API_AUDIENCE = 'Sdte6FDTS7v3ay20iYooW8pdmu0VI8gu'
+ALGORITHMS = ["RS256"]
+
+@app.authorizer()
+def demo_auth(auth_request):
+    token = auth_request.token
+    jsonurl = urlopen("https://"+AUTH0_DOMAIN+"/.well-known/jwks.json")
+    jwks = json.loads(jsonurl.read())
+    unverified_header = jwt.get_unverified_header(token)
+    rsa_key = {}
+    for key in jwks["keys"]:
+        if key["kid"] == unverified_header["kid"]:
+            rsa_key = {
+                "kty": key["kty"],
+                "kid": key["kid"],
+                "use": key["use"],
+                "n": key["n"],
+                "e": key["e"]
+            }
+    if rsa_key:
+        try:
+            payload = jwt.decode(
+                token,
+                rsa_key,
+                algorithms=ALGORITHMS,
+                audience=API_AUDIENCE,
+                issuer="https://"+AUTH0_DOMAIN+"/"
+            )
+        except jwt.ExpiredSignatureError:
+            print('tits1')
+            return AuthResponse(routes=[], principal_id='user')
+            # raise AuthError({"code": "token_expired",
+            #                 "description": "token is expired"}, 401)
+        except jwt.JWTClaimsError:
+            print('tits2')
+            return AuthResponse(routes=[], principal_id='user')
+            # raise AuthError({"code": "invalid_claims",
+            #                 "description":
+            #                     "incorrect claims,"
+            #                     "please check the audience and issuer"}, 401)
+        except Exception:
+            print('tits3')
+            return AuthResponse(routes=[], principal_id='user')
+            # raise AuthError({"code": "invalid_header",
+            #                 "description":
+            #                     "Unable to parse authentication"
+            #                     " token."}, 401)
+
+        print(payload)
+    return AuthResponse(routes=['/'], principal_id='user')
+    # raise AuthError({"code": "invalid_header",
+    #                 "description": "Unable to find appropriate key"}, 401)
+
+
+@app.route('/', authorizer=demo_auth)
 def index():
+    print(app.current_request.context)
     return {'hello': 'world'}
+
+
+
+
+# Format error response and append status code
+def get_token_auth_header():
+    """Obtains the Access Token from the Authorization Header
+    """
+    auth = request.headers.get("Authorization", None)
+    if not auth:
+        raise AuthError({"code": "authorization_header_missing",
+                        "description":
+                            "Authorization header is expected"}, 401)
+
+    parts = auth.split()
+
+    if parts[0].lower() != "bearer":
+        raise AuthError({"code": "invalid_header",
+                        "description":
+                            "Authorization header must start with"
+                            " Bearer"}, 401)
+    elif len(parts) == 1:
+        raise AuthError({"code": "invalid_header",
+                        "description": "Token not found"}, 401)
+    elif len(parts) > 2:
+        raise AuthError({"code": "invalid_header",
+                        "description":
+                            "Authorization header must be"
+                            " Bearer token"}, 401)
+
+    token = parts[1]
+    return token
+
+
+def requires_auth(f):
+    """Determines if the Access Token is valid
+    """
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = get_token_auth_header()
+        jsonurl = urlopen("https://"+AUTH0_DOMAIN+"/.well-known/jwks.json")
+        jwks = json.loads(jsonurl.read())
+        unverified_header = jwt.get_unverified_header(token)
+        rsa_key = {}
+        for key in jwks["keys"]:
+            if key["kid"] == unverified_header["kid"]:
+                rsa_key = {
+                    "kty": key["kty"],
+                    "kid": key["kid"],
+                    "use": key["use"],
+                    "n": key["n"],
+                    "e": key["e"]
+                }
+        if rsa_key:
+            try:
+                payload = jwt.decode(
+                    token,
+                    rsa_key,
+                    algorithms=ALGORITHMS,
+                    audience=API_AUDIENCE,
+                    issuer="https://"+AUTH0_DOMAIN+"/"
+                )
+            except jwt.ExpiredSignatureError:
+                raise AuthError({"code": "token_expired",
+                                "description": "token is expired"}, 401)
+            except jwt.JWTClaimsError:
+                raise AuthError({"code": "invalid_claims",
+                                "description":
+                                    "incorrect claims,"
+                                    "please check the audience and issuer"}, 401)
+            except Exception:
+                raise AuthError({"code": "invalid_header",
+                                "description":
+                                    "Unable to parse authentication"
+                                    " token."}, 401)
+
+            _request_ctx_stack.top.current_user = payload
+            return f(*args, **kwargs)
+        raise AuthError({"code": "invalid_header",
+                        "description": "Unable to find appropriate key"}, 401)
+    return decorated
+
 
 
 @app.route('/createStudent', methods=['POST'])
@@ -109,6 +252,7 @@ def upload_transcript():
         pdf2 = ppy.PdfFileReader("transcript.pdf")
         classes = parseUWTranscript.getClasses(pdf2)
         print(classes)
+        parseUWTranscript.commitData(classes, body['userID'])
         # convert classes to the database
         return {
             'statusCode' : 200
@@ -117,6 +261,36 @@ def upload_transcript():
         'statusCode' : 400,
         'error' : 'Student Already Exists'
     }
+
+
+@app.route('/login/{jwt}', methods=['GET'])
+def login(jwt):
+    # decode the jwt 
+    # check if the user exists and if they uploaded a transcript
+    conn = pymysql.connect(rds_host, user=name, passwd=password, db=db_name, connect_timeout=5)
+    with conn.cursor() as cur:
+        cur.execute(""" select studentID from tbl_students where email = %s """ 
+        % (email))
+
+        # user does not exist
+        if cursor.rowcount == 0:
+            cur.close()
+            return {
+                'statusCode' : 200,
+                'studentID' : -1
+            }
+
+        # get studentId of existing user
+        result_set = cursor.fetchall()
+        studentID = result_set[0]['studentID']
+        cur.close()
+
+        return {
+            'statusCode' : 200,
+            'studentID' : studentID
+        }
+
+
 
 # The view function above will return {"hello": "world"}
 # whenever you make an HTTP GET request to '/'.
