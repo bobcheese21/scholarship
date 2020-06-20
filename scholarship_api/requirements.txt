@@ -1,0 +1,4 @@
+chalice==1.15.1
+pandas==1.0.4
+PyMySQL==0.9.3
+PyPDF2==1.26.0
