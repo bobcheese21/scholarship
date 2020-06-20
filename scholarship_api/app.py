@@ -109,6 +109,7 @@ def upload_transcript():
         pdf2 = ppy.PdfFileReader("transcript.pdf")
         classes = parseUWTranscript.getClasses(pdf2)
         print(classes)
+        # convert classes to the database
         return {
             'statusCode' : 200
         }
